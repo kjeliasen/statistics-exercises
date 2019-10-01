@@ -72,12 +72,27 @@ def get_db_url(user, password, host, database):
     return f'mysql+pymysql://{user}:{password}@{host}/{database}'
 
 
-def roll_dice(n_dice, n_times, n_sides=6):
-    return np.random.choice(np.arange(n_sides) + 1, (n_times, n_dice))
 
 
-def flip_coin(n_coins, n_times)
-    return np.random.choice(np.arange(2), (n_times, n_coins))
+def roll_dice(n_dice=2, n_trials=10, n_sides=6, base=1): 
+    return list(tuple(np.random.choice(np.arange(base, n_sides + base), n_dice, replace=True)) for r in range(n_trials))
+
+
+# def _roll(die, n_dice):
+#     return tuple(np.random.choice(die, n_dice, replace=True))
+
+# def roll_once(n_sides=6, n_dice=2):
+#     return _roll(np.arange(1, n_sides + 1), n_dice)
+
+# def roll_many(n_sides=6, n_dice=2, n_trials=1000):
+#     die = np.arange(1, n_sides + 1)
+#     return (_roll(die, n_dice) for i in range(n_trials))
+
+
+def flip_coins(n_coins, n_times, base=0):
+    return (roll_dice(n_dice=n_coins, n_trials=n_trials, n_sides=2, base=base))
+
+#    return np.random.choice(np.arange(2), (n_times, n_coins))
 
 
 #print_title('Title_goes_here')
@@ -103,8 +118,13 @@ print_title('Problem 1')
 
 print_rule('''How likely is it that you roll doubles when rolling two dice?''')
 
+n_trials = 100000
+n_dice = 2
+rolls = roll_dice(n_dice, n_trials)
+is_pair = sum([1 for roll in rolls if len(set(roll)) == 1])
+p_equal = is_pair / n_trials
 
-
+print(f'{title_fancy}Sample hit {is_pair} our of {n_trials} times, for a probability of {100 * p_equal:.2f}%{Style.RESET_ALL}')
 
 ###############################################################################
 ###############################################################################
@@ -115,7 +135,13 @@ print_title('Problem 2')
 print_rule('''If you flip 8 coins, what is the probability of getting exactly 3 heads? What 
 is the probability of getting more than 3 heads?''')
 
+n_trials = 100000
+n_coins = 8
+flips = flip_coins(n_coins, n_trials)
+three_heads = sum([1 for flip in flips if sum(flip) == 3])
+p_3_heads = three_heads / n_trials
 
+print(f'{title_fancy}Sample hit {three_heads} our of {n_trials} times, for a probability of {100 * p_3_heads:.2f}%{Style.RESET_ALL}')
 
 ###############################################################################
 ###############################################################################
@@ -128,7 +154,14 @@ cohort at Codeup. Assuming that Codeup randomly selects an alumni to put on a
 billboard, what are the odds that the two billboards I drive past both have 
 data science students on them?''')
 
+n_trials = 100000
+n_cohorts = 4
+n_boards = 2
+sightings = roll_dice(n_dice=n_boards, n_trials=n_trials, n_sides=n_cohorts)
+two_datas = sum([1 for sighting in sightings if len(set(sighting)) == 1 and sighting[0] == 1])
+p_2_datas = two_datas / n_trials
 
+print(f'{title_fancy}Sample hit {two_datas} our of {n_trials} times, for a probability of {100 * p_2_datas:.2f}%{Style.RESET_ALL}')
 
 ###############################################################################
 ###############################################################################
