@@ -89,6 +89,16 @@ def roll_dice(n_dice=2, n_trials=10, n_sides=6, base=1):
 #     return (_roll(die, n_dice) for i in range(n_trials))
 
 
+def select_normal(mean, std, n_sets=1, n_trials=1000): 
+    return list(tuple(np.random.normal(mean, std, n_sets) for r in range(n_trials)))
+
+
+def select_normal_int(mean, std, n_sets=1, n_trials=1000): 
+    non_int_results = select_normal(mean=mean, std=std, n_sets=1, n_trials=n_trials * n_sets)
+    int_results = np.array([max(0,int(result)) for result in non_int_results])
+    return int_results.reshape(n_trials, n_sets)
+
+
 def flip_coins(n_coins, n_times, base=0):
     return (roll_dice(n_dice=n_coins, n_trials=n_trials, n_sides=2, base=base))
 
@@ -174,7 +184,14 @@ snack vending machine. If on monday the machine is restocked with 17 poptart
 packages, how likely is it that I will be able to buy some poptarts on Friday 
 afternoon?''')
 
+n_trials = 100000
+mean = 3
+std = 1.5
+tarts_popped = select_normal_int(mean=mean, std=std, n_sets=5, n_trials=n_trials)
+unpopped_tarts = sum([1 for pop in tarts_popped if sum(pop) <= 16])
+p_tarts = unpopped_tarts / n_trials
 
+print(f'{title_fancy}Sample hit {unpopped_tarts} our of {n_trials} times, for a probability of {100 * p_tarts:.2f}%{Style.RESET_ALL}')
 
 ###############################################################################
 ###############################################################################
@@ -185,6 +202,20 @@ print_title('Problem 5 - Compare Heights')
 print_rule('''Men have an average height of 178 cm and standard deviation of 8cm.
 Women have a mean of 170, sd = 6cm.
 If a man and woman are chosen at random, P(woman taller than man)?''')
+
+n_trials = 100000
+mean_men = 178
+std_men = 8
+mean_women = 170
+std_women = 6
+heights_men = select_normal(mean=mean_men, std=std_men, n_sets=1, n_trials=n_trials)
+heights_women = select_normal(mean=mean_women, std=std_women, n_sets=1, n_trials=n_trials)
+heights_all = list(zip(heights_men, heights_women))
+taller_women = sum([1 for heights in heights_all if heights[0] < heights[1]])
+p_taller_woman = taller_women / n_trials
+
+print(f'{title_fancy}Sample hit {taller_women} our of {n_trials} times, for a probability of {100 * p_taller_woman:.2f}%{Style.RESET_ALL}')
+
 
 ###############################################################################
 ###############################################################################
@@ -197,18 +228,34 @@ that the download is corrupted and the installation fails. What are the odds
 that after having 50 students download anaconda, no one has an installation 
 issue?''') 
 
+n_trials = 100000
+n_risk = 250
+
+def get_good_installs(n_users, n_risk, n_trials):
+    install_results = roll_dice(n_dice=n_users, n_trials=n_trials, n_sides=n_risk)
+    good_installs = sum([1 for result in install_results if 1 not in result])
+    p_all_good = good_installs / n_trials
+    print(f'{title_fancy}Sample hit {good_installs} out of {n_trials} times with {n_users} users, for a probability of {100 * p_all_good:.2f}%{Style.RESET_ALL}')
+    return install_results, good_installs, p_all_good
+
+install_results, good_installs, p_all_good = get_good_installs(n_users=50, n_risk=n_risk, n_trials=n_trials)
+
 
 print_rule('''100 students?''')
 
+install_results, good_installs, p_all_good = get_good_installs(n_users=100, n_risk=n_risk, n_trials=n_trials)
 
 
 print_rule('''What is the probability that we observe an installation issue within the first 
 150 students that download anaconda?''')
 
+install_results, good_installs, p_all_good = get_good_installs(n_users=150, n_risk=n_risk, n_trials=n_trials)
+print(f'\n{title_fancy}There is a probability of {100 * (1 - p_all_good):.2f}% chance of encountering an error{Style.RESET_ALL}')
 
 
 print_rule('''How likely is it that 450 students all download anaconda without an issue?''')
 
+install_results, good_installs, p_all_good = get_good_installs(n_users=450, n_risk=n_risk, n_trials=n_trials)
 
 
 ###############################################################################
