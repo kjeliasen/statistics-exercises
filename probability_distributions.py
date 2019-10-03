@@ -6,8 +6,7 @@ import seaborn as sns
 import datetime as dt
 from scipy import stats
 
-# from env import host, user, password
-
+from env import host, user, password
 #url = f'mysql+pymysql://{user}:{password}@{host}/employees'
 
 from colorama import init, Fore, Back, Style
@@ -124,7 +123,7 @@ an experimental probability, then compare that to the theoretical probability.''
 , intro_fancy)
 
 n_trials = 1000000
-get_rvs = lambda stat, n_samples=1: stat.rvs(n_trials, n_samples)
+get_rvs = lambda stat, n_samples=1: stat.rvs((round(n_trials / n_samples), n_samples))
 model_title('test')
 
 ###############################################################################
@@ -158,14 +157,14 @@ model_test('Chance no cars arrive:',make_pct(model_cars_in_line), make_pct(test_
 
 ###############################################################################
 
-model_cars_in_line = cars_in_line.sf(2.9)
-test_cars_in_line = (sample_cars_in_line >= 3).mean()
+model_cars_in_line = cars_in_line.sf(2)
+test_cars_in_line = (sample_cars_in_line > 2).mean()
 model_test('Chance 3 or more cars arrive:',make_pct(model_cars_in_line), make_pct(test_cars_in_line))
 
 ###############################################################################
 
-model_cars_in_line = cars_in_line.sf(0.9)
-test_cars_in_line = (sample_cars_in_line >= 1).mean()
+model_cars_in_line = cars_in_line.sf(0)
+test_cars_in_line = (sample_cars_in_line > 0).mean()
 model_test('Chance at least one car arrives:',make_pct(model_cars_in_line), make_pct(test_cars_in_line))
 
 ###############################################################################
@@ -192,7 +191,7 @@ sample_grades = get_rvs(grades)
 ###############################################################################
 
 model_gpa_in_top_5_pct = grades.ppf(.95)
-test_gpa_in_top_5_pct = np.percentile(sample_grades, .95)
+test_gpa_in_top_5_pct = np.percentile(sample_grades, 95)
 
 
 #print(fancify(f'{model_gpa_in_top_5_pct:.2f}', demo_fancy))
@@ -202,8 +201,8 @@ model_test('GPA in top 5 percent:', f'{model_gpa_in_top_5_pct:.2f}', f'{test_gpa
 
 model_top_of_third_decile = grades.ppf(.30)
 model_bottom_of_third_decile = grades.ppf(.20)
-test_top_of_third_decile = np.percentile(sample_grades, .30)
-test_bottom_of_third_decile = np.percentile(sample_grades, .20)
+test_top_of_third_decile = np.percentile(sample_grades, 30)
+test_bottom_of_third_decile = np.percentile(sample_grades, 20)
 
 #print(fancify(f'Third decile range: {model_bottom_of_third_decile:.2f}-{model_top_of_third_decile:.2f}', demo_fancy))
 #print(fancify('A 2.8 GPA would qualify', demo_fancy))
@@ -224,21 +223,25 @@ observed_visitors = 4326
 expected_rate = .02
 expected_clicks = round(observed_visitors * expected_rate)
 observed_clicks = 97
+observed_rate = observed_clicks/observed_visitors
 print(fancify(f'Visitors: {observed_visitors:d}',demo_fancy))
 print(fancify(f'Expected Clicks: {expected_clicks:d}',demo_fancy))
 print(fancify(f'Observed Clicks: {observed_clicks:d}',demo_fancy))
+print(fancify(f'Observed Rate: {make_pct(observed_rate)}', demo_fancy))
 print()
 model_title('Click-thrus')
 
-
+#print('Get poisson')
 model_click_through = stats.poisson(expected_clicks)
+#print('Get test')
 test_click_through = get_rvs(model_click_through, observed_visitors)
-observed_rate = observed_clicks/observed_visitors
+#test_click_through = model_click_through.rvs((10000, observed_visitors))
+#print('figure rate')
 
-p_higher_click_through = model_click_through.sf(observed_clicks)
+p_higher_click_through = model_click_through.sf(observed_clicks - 1)
 t_higher_click_through = (test_click_through >= observed_clicks).mean()
 
-model_test('Chance of observed rate or higher::',make_pct(p_higher_click_through), make_pct(t_higher_click_through))
+model_test('Chance of observed rate or higher:',make_pct(p_higher_click_through), make_pct(t_higher_click_through))
 
 
 ###############################################################################
@@ -256,7 +259,7 @@ What is the probability that at least one of your first 60 answers is correct?''
 
 model_title('Probibilities probability')
 
-possible_answers = 100
+possible_answers = 101
 p_right_answer = 1 / possible_answers
 attempts = 60
 
@@ -299,19 +302,23 @@ student_cleans_day = lambda days=1: stats.binom((student_visits * days), student
 student_cleans_span_days = lambda days: stats.binom(days, daily_clean_rate)
 
 
-def clean_days(days, text):
+def clean_days(days, text, inverse=False):
     model_clean_days = student_cleans_day(days)
     test_clean_days = get_rvs(model_clean_days)
     
     model_clean_rate = model_clean_days.sf(0)
     test_clean_rate = (test_clean_days > 0).mean()
     
+    if inverse:
+        model_clean_rate = 1 - model_clean_rate
+        test_clean_rate = 1 - test_clean_rate
+
     model_test(text, make_pct(model_clean_rate), make_pct(test_clean_rate))
 
 
-clean_days(1,'Chance it gets cleaned any day:')
-clean_days(2,'Chance it gets cleaned any 2 days:')
-clean_days(5,'Chance it gets cleaned any week:')
+clean_days(days=1, text='Chance it gets cleaned any day:')
+clean_days(days=2, text='Chance it goes uncleaned any 2 days:', inverse=True)
+clean_days(days=5, text='Chance it gets uncleaned any week:', inverse=True)
 
 
 ###############################################################################
@@ -361,14 +368,71 @@ print_title('Problem 7')
 print_rule('''Connect to the employees database and find the average salary of current 
 employees, along with the standard deviation. Model the distribution of 
 employees salaries with a normal distribution and answer the following 
-questions:
+questions:''')
 
-What percent of employees earn less than 60,000?
+get_database = 'employees'
+employees_url = get_db_url(user=user, password=password, host=host, database=get_database)
+
+# employees = pd.read_sql('SELECT * FROM employees', employees_url)
+# frame_splain(employees,'employees')
+
+# salaries = pd.read_sql('SELECT * FROM salaries', employees_url)
+# frame_splain(salaries,'salaries')
+
+employee_salaries = pd.read_sql('''
+    SELECT 
+        e.emp_no, 
+        e.birth_date,
+        e.first_name,
+        e.last_name,
+        e.gender,
+        e.hire_date,
+        s.salary,
+        s.from_date
+    FROM
+        employees e
+        INNER JOIN salaries s USING(emp_no)
+    WHERE
+        s.to_date > NOW()
+        ;''', employees_url)
+frame_splain(employee_salaries, 'employeesalaries')
+
+print_rule('''What percent of employees earn less than 60,000?
 
 What percent of employees earn more than 95,000?
 
 What percent of employees earn between 65,000 and 80,000?
 
 What do the top 5% of employees make?''')
+
+model_title('Employees database')
+
+actual_salaries = employee_salaries.salary
+salary_mean = actual_salaries.mean()
+salary_std = actual_salaries.std()
+
+model_salaries = stats.norm(salary_mean, salary_std)
+model_graph = get_rvs(model_salaries)
+#model_salaries = get_rvs(model_salary_dist)
+
+sns.distplot(actual_salaries, label='Actuals', color='blue')
+sns.distplot(model_graph, label='Model', color='green')
+plt.show()
+
+model_below_60 = 1 - model_salaries.sf(60000)
+actual_below_60 = (actual_salaries < 60000).mean()
+model_test('Chance less than 60,000:',make_pct(model_below_60), make_pct(actual_below_60))
+
+model_above_85 = model_salaries.sf(85000)
+actual_above_85 = (actual_salaries > 85000).mean()
+model_test('Chance above 85,000:',make_pct(model_above_85), make_pct(actual_above_85))
+
+model_65_to_80 = model_salaries.cdf(80000) - model_salaries.cdf(65000-.01) 
+actual_65_to_80 = (actual_salaries.apply(lambda x: x>= 65000 and x <= 80000)).mean()
+model_test('Chance between 65,000 and 80,000:',make_pct(model_65_to_80), make_pct(actual_65_to_80))
+
+model_top_5_pct = model_salaries.ppf(.95)
+actual_top_5_pct = np.percentile(actual_salaries, 95)
+model_test('Top 5 percent:',str(round(model_top_5_pct,2)), str(round(actual_top_5_pct,2)))
 
 
