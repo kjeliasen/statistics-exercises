@@ -52,3 +52,13 @@ p_unique_bdays = lambda x: (unique_bdays(x) == x).mean()
 
 
 p_from_pandas = lambda x: (pd.DataFrame(birthdays(x)).nunique(axis=1) < x).mean()
+
+
+def roll_results(n_trials=10000, dice_per_roll=2, sides_per_die=6, base=1):
+    return np.random.choice(np.arange(sides_per_die + base), (n_trials, dice_per_roll))
+
+def unique_roll_values(n_trials=10000, dice_per_roll=2, sides_per_die=6, base=1):
+    return np.array([np.unique(roll).size for roll in roll_results(n_trials=n_trials, dice_per_roll=dice_per_roll, sides_per_die=sides_per_die, base=base)])
+
+def p_all_dice_equal(n_trials=10000, dice_per_roll=2, sides_per_die=6, base=1):
+    return (unique_roll_values(n_trials=n_trials, dice_per_roll=dice_per_roll, sides_per_die=sides_per_die, base=base) == 1).mean()
