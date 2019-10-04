@@ -124,7 +124,7 @@ an experimental probability, then compare that to the theoretical probability.''
 
 n_trials = 1000000
 get_rvs = lambda stat, n_samples=1: stat.rvs((round(n_trials / n_samples), n_samples))
-model_title('test')
+#model_title('test')
 
 ###############################################################################
 ###############################################################################
@@ -395,7 +395,7 @@ employee_salaries = pd.read_sql('''
     WHERE
         s.to_date > NOW()
         ;''', employees_url)
-frame_splain(employee_salaries, 'employeesalaries')
+frame_splain(employee_salaries, 'employee salaries')
 
 print_rule('''What percent of employees earn less than 60,000?
 
@@ -415,8 +415,8 @@ model_salaries = stats.norm(salary_mean, salary_std)
 model_graph = get_rvs(model_salaries)
 #model_salaries = get_rvs(model_salary_dist)
 
-sns.distplot(actual_salaries, label='Actuals', color='blue')
-sns.distplot(model_graph, label='Model', color='green')
+ax1 = sns.distplot(actual_salaries, label='Actuals', color='blue')
+ax2 = sns.distplot(model_graph, label='Model', color='green')
 plt.show()
 
 model_below_60 = 1 - model_salaries.sf(60000)
@@ -434,5 +434,3 @@ model_test('Chance between 65,000 and 80,000:',make_pct(model_65_to_80), make_pc
 model_top_5_pct = model_salaries.ppf(.95)
 actual_top_5_pct = np.percentile(actual_salaries, 95)
 model_test('Top 5 percent:',str(round(model_top_5_pct,2)), str(round(actual_top_5_pct,2)))
-
-
